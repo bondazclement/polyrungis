@@ -43,6 +43,9 @@ ${Y}SUPERVISION${N}
                                CLOB, RTDS) depuis cette machine.
 
 ${Y}DRY RUN${N}
+  collecter [options]          Collecte pure pour la calibration : AUCUN
+                               trade, PnL toujours nul, la table apprend des
+                               fenêtres. Options : --tranches N --duree S.
   demarrer [options]           Lance la boucle de campagnes en arrière-plan
                                (tranches archivées + état persistant).
       --max-entry X            Plafond de prix d'entrée taker (défaut 0.75)
@@ -172,6 +175,24 @@ cmd_demarrer() {
   pgrep -f "[c]ampaign.sh" >/dev/null && ok "Boucle lancée. Suivi : pm-ctl statut / pm-ctl suivre" || ko "Échec du lancement (voir $DATA/campaign_loop.out)"
 }
 
+cmd_collecter() {
+  local tranches=1000 duree=3000
+  while [ $# -gt 0 ]; do case "$1" in
+    --tranches) tranches="$2"; shift 2;;
+    --duree) duree="$2"; shift 2;;
+    *) ko "option inconnue : $1"; exit 1;;
+  esac; done
+  pgrep -f "[c]ampaign.sh" >/dev/null && { ko "Une boucle tourne déjà (pm-ctl arreter d'abord)."; exit 1; }
+  mkdir -p "$DATA"
+  [ -x "$BOT" ] || { ko "Binaire absent — lancez : cargo build --release"; exit 1; }
+  info "Collecte pour calibration : AUCUN trade, PnL toujours nul."
+  info "La table de calibration apprend des fenêtres réglées. $tranches tranches de ${duree}s max."
+  nohup bash "$BASE/scripts/campaign.sh" 0 0 "$tranches" "$duree" collecte \
+    > "$DATA/campaign_loop.out" 2>&1 & disown
+  sleep 2
+  pgrep -f "[c]ampaign.sh" >/dev/null && ok "Collecte lancée. Suivi : pm-ctl statut / pm-ctl suivre" || ko "Échec (voir $DATA/campaign_loop.out)"
+}
+
 cmd_arreter() {
   local pids
   pids=$(pgrep -f "[c]ampaign.sh"); [ -n "$pids" ] && kill $pids 2>/dev/null && ok "Boucle arrêtée."
@@ -260,6 +281,7 @@ case "${1:-aide}" in
   suivre)     shift; cmd_suivre "$@";;
   sante|santé) shift; cmd_sante "$@";;
   demarrer|démarrer) shift; cmd_demarrer "$@";;
+  collecter|collecte) shift; cmd_collecter "$@";;
   arreter|arrêter)   shift; cmd_arreter "$@";;
   direct)     shift; cmd_direct "$@";;
   backtest)   shift; cmd_backtest "$@";;

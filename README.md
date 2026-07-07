@@ -58,7 +58,8 @@ Installation directe non interactive (serveur/CI) : `./install.sh --auto`.
 
 ```bash
 pm-ctl sante          # connectivité Polymarket
-pm-ctl demarrer       # dry run (paper trading, aucun ordre réel)
+pm-ctl collecter      # collecte pure pour la calibration (AUCUN trade, PnL nul)
+pm-ctl demarrer       # dry run paper avec décisions (fait des entrées paper)
 pm-ctl statut         # supervision : fenêtre, strike, flux, PnL
 pm-ctl rapport        # règlements + entrées
 pm-ctl arreter        # arrêt propre

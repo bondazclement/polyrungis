@@ -92,7 +92,23 @@ Attendu : trois lignes « joignable » (Gamma, CLOB, ws-live-data). Depuis
 un datacenter suédois, aucun blocage SNI — si un host échoue, vérifiez le
 pare-feu UpCloud (§7).
 
-## 5. Lancer le dry run 24/7 (service systemd)
+## 5. Collecter des fenêtres pour la calibration (recommandé au départ)
+
+Pour **développer la table de calibration sans trader** (aucune position,
+PnL toujours nul, aucune écriture parasite) :
+
+```bash
+pm-ctl collecter                 # boucle de collecte, apprend des fenêtres
+pm-ctl collecter --duree 3000    # tranches plus longues
+pm-ctl statut                    # supervision (Résolutions ✓/✗, calibration)
+pm-ctl arreter                   # arrêt propre
+```
+
+La table `data_v2/calibration.json` grossit à chaque fenêtre réglée. C'est
+le mode idéal pour les premiers jours sur le serveur : constituer une
+calibration robuste avant tout test de décision.
+
+## 6. Lancer le dry run 24/7 (service systemd)
 
 Pour que le bot survive aux déconnexions SSH et redémarre au boot :
 
@@ -126,7 +142,7 @@ pm-ctl suivre        # logs en direct
 journalctl --user -u pm-dryrun -f
 ```
 
-## 6. Espace disque
+## 7. Espace disque
 
 | Poste | Volume |
 |---|---|
@@ -138,7 +154,7 @@ La boucle de campagne compresse (zstd) et purge le brut à chaque tranche.
 80 Go de disque couvrent largement plusieurs semaines. Surveillez avec
 `pm-ctl statut` (ligne disque).
 
-## 7. Pare-feu UpCloud
+## 8. Pare-feu UpCloud
 
 Le bot n'a besoin d'AUCUN port entrant (il n'ouvre que des connexions
 sortantes vers Polymarket). Configuration recommandée dans le panneau
@@ -156,7 +172,7 @@ sortantes vers Polymarket). Configuration recommandée dans le panneau
   # et ouvrez http://localhost:7777 dans VOTRE navigateur
   ```
 
-## 8. Passer au micro-test réel (quand vous le décidez)
+## 9. Passer au micro-test réel (quand vous le décidez)
 
 Rien d'automatique : le mode réel exige la recompilation `--features live`
 et vos identifiants. Le script guide tout :
@@ -174,7 +190,7 @@ de signature (voir [`CREDENTIALS.md`](CREDENTIALS.md)), plafonne à 5 $/ordre
 et 20 $ de perte max. Réclamation des gains : manuelle sur polymarket.com
 pour l'instant (voir [`VISION.md`](VISION.md), chantier auto-redeem).
 
-## 9. Sauvegarde de la table de calibration
+## 10. Sauvegarde de la table de calibration
 
 Le seul état précieux qui s'accumule est `data_v2/calibration.json` (la
 mémoire apprise du bot). Sauvegardez-le régulièrement hors du serveur :
