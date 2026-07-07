@@ -23,3 +23,4 @@ config-micro.toml
 *.log
 .claude/settings.local.json
 config-micro-test.conf
+data_collect/

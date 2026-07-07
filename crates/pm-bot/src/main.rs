@@ -483,7 +483,7 @@ async fn main() -> Result<()> {
     // Flux de résolution : connexion continue, indépendante des fenêtres.
     tokio::spawn(rtds::run(bus.clone(), recorder.clone()));
     // Capture Binance directe (archivage seul — étude lead-lag, cf. binance.rs).
-    tokio::spawn(pm_acquisition::binance::run(recorder.clone()));
+    tokio::spawn(pm_acquisition::binance::run(recorder.clone(), "btcusdt".into()));
     tokio::spawn(watchdog.clone().run(bus.clone()));
 
     // Découverte des fenêtres + rotation du flux CLOB.

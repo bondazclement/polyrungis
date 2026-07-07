@@ -2945,6 +2945,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pm-collect"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pm-acquisition",
+ "pm-core",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "pm-core"
 version = "0.1.0"
 dependencies = [

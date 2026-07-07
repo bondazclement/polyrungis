@@ -14,12 +14,13 @@ use std::time::Duration;
 use tokio::time;
 use tokio_tungstenite::tungstenite::Message;
 
-const WS_BINANCE_URL: &str = "wss://stream.binance.com:9443/ws/btcusdt@trade";
-
-pub async fn run(recorder: Recorder) {
+/// Capture du flux `<symbol>@trade` de Binance (ex. `btcusdt`, `ethusdt`).
+/// `symbol` est en minuscules, sans suffixe.
+pub async fn run(recorder: Recorder, symbol: String) {
+    let url = format!("wss://stream.binance.com:9443/ws/{}@trade", symbol);
     let mut backoff_s = 1u64;
     loop {
-        match connect_and_stream(&recorder).await {
+        match connect_and_stream(&recorder, &url, &symbol).await {
             Ok(()) => return,
             Err(e) => tracing::warn!("binance: {e:#} — reconnexion dans {backoff_s}s"),
         }
@@ -28,9 +29,9 @@ pub async fn run(recorder: Recorder) {
     }
 }
 
-async fn connect_and_stream(recorder: &Recorder) -> anyhow::Result<()> {
-    let ws = crate::net::connect_ws(WS_BINANCE_URL).await?;
-    tracing::info!("Binance connecté (btcusdt@trade, capture seule)");
+async fn connect_and_stream(recorder: &Recorder, url: &str, symbol: &str) -> anyhow::Result<()> {
+    let ws = crate::net::connect_ws(url).await?;
+    tracing::info!("Binance connecté ({symbol}@trade, capture seule)");
     let (mut write, mut read) = ws.split();
     let mut check = time::interval(Duration::from_secs(5));
     let mut last_data_ms = now_ms();
