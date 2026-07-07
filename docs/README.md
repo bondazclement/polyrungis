@@ -39,6 +39,9 @@
 | [MVP_REEL.md](MVP_REEL.md) | architecture LiveGateway/RiskGate, runbook, manques |
 | `../scripts/tester-ordres.sh` | batterie A-Z du chemin d'ordres (validée 7/7 le 06/07) |
 
+## Identité
+[IDENTITE.md](IDENTITE.md) — logo ASCII, mascotte (Robert le poireau), palette, devises 🥬
+
 ## Historique
 [ROADMAP.md](ROADMAP.md) · [RAPPORT_NUIT_20260706.md](RAPPORT_NUIT_20260706.md) ·
 [PLAN_CHANTIERS_DASH_DOC.md](PLAN_CHANTIERS_DASH_DOC.md) · data_samples/README.md

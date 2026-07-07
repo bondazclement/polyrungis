@@ -110,10 +110,16 @@ detect_distro() {
 }
 
 # ─── Châssis d'affichage ─────────────────────────────────────────────────
+# Le poireau : emblème de Rungis, en vert (ça monte 📈).
+logo() {
+  echo "${GRN}${B}    \\|/${N}   ${MAG}${B}polyrungis${N}"
+  echo "${GRN}${B}    \\|/${N}   ${GRY}~ le poireau qui trade ~${N}"
+  echo "${GRN}${B}    /|\\${N}"
+}
 banniere() {
   clear
   echo "${MAG}${B}╔════════════════════════════════════════════════════════════════════╗${N}"
-  printf "${MAG}${B}║${N}  ${B}%-66s${N}${MAG}${B}║${N}\n" "$(tr titre)"
+  printf "${MAG}${B}║${N}  ${GRN}${B}\\|/${N} ${B}%-62s${N}${MAG}${B}║${N}\n" "$(tr titre)"
   echo "${MAG}${B}╚════════════════════════════════════════════════════════════════════╝${N}"
   printf "  ${GRY}%s : ${N}%s   ${GRY}·   Rust : ${N}%s\n\n" "$(tr distro)" \
     "$PKG_NAME" "$(command -v cargo >/dev/null 2>&1 && rustc --version 2>/dev/null | cut -d' ' -f2 || echo '—')"
@@ -194,7 +200,9 @@ act_stop() {
 # ─── Sélection de la langue ──────────────────────────────────────────────
 choisir_langue() {
   clear
-  echo "${MAG}${B}  Polymarket btc-updown-5m${N}"
+  echo
+  logo
+  echo
   echo "  ${GRY}Langue · Language · Sprache${N}"
   echo "    ${B}1${N}  🇫🇷 Français"
   echo "    ${B}2${N}  🇬🇧 English"

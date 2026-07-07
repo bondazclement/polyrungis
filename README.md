@@ -1,3 +1,13 @@
+```
+ ____    ___   _     __   __ ____   _   _  _   _   ____  ___  ____
+|  _ \  / _ \ | |    \ \ / /|  _ \ | | | || \ | | / ___||_ _|/ ___|
+| |_) || | | || |     \ V / | |_) || | | ||  \| || |  _  | | \___ \
+|  __/ | |_| || |___   | |  |  _ < | |_| || |\  || |_| | | |  ___) |
+|_|     \___/ |_____|  |_|  |_| \_\ \___/ |_| \_| \____||___||____/
+            \|/   le poireau qui trade · du frais, du local, du BTC
+            /|\
+```
+
 # 🥬 polyrungis — Bot Polymarket BTC Up/Down 5 minutes
 
 Bot de trading autonome pour le marché **« Bitcoin Up or Down »** de
@@ -7,7 +17,11 @@ résout selon que le prix Chainlink BTC/USD a monté ou baissé depuis un
 estime la probabilité de résolution et n'entre que dans une zone
 statistiquement prouvée gagnante.
 
-*polyrungis* (clin d'œil au marché de Rungis) est écrit en **Rust**
+> **polyrungis poireaute jusqu'à la frontière** — il n'entre que
+> dans la zone prouvée gagnante, et attend patiemment le reste du temps.
+
+*polyrungis* (clin d'œil au marché de Rungis, et à *poireauter* = attendre)
+est écrit en **Rust**
 (workspace multi-crates), 95 tests, paper trading et
 exécution réelle sous garde-fous, interface web locale, installateur
 multilingue.
@@ -100,6 +114,7 @@ Point d'entrée : [`docs/README.md`](docs/README.md) (index par usage).
   [`docs/CREDENTIALS.md`](docs/CREDENTIALS.md) ·
   [`docs/MVP_REEL.md`](docs/MVP_REEL.md)
 - **Déployer** : [`docs/DEPLOIEMENT_UPCLOUD.md`](docs/DEPLOIEMENT_UPCLOUD.md)
+- **Identité** : [`docs/IDENTITE.md`](docs/IDENTITE.md) 🥬 (logo, mascotte, palette, devises)
 
 ## ⚠️ Avertissement
 
