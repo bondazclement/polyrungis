@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pm-dash — btc-updown-5m</title>
+<style>
+:root{
+  --surface:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axe:#c3c2b7; --bord:rgba(11,11,11,.10);
+  --up:#2a78d6; --down:#eb6834; --serie3:#1baf7a; --bon:#0ca30c; --critique:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --surface:#1a1a19; --page:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axe:#383835; --bord:rgba(255,255,255,.10);
+    --up:#3987e5; --down:#d95926; --serie3:#199e70;
+  }
+}
+*{box-sizing:border-box;margin:0}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--page);color:var(--ink);padding:14px}
+h1{font-size:16px;font-weight:650;display:flex;gap:10px;align-items:baseline}
+h1 small{color:var(--muted);font-weight:400}
+h2{font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+nav{display:flex;gap:6px;margin:10px 0 14px}
+nav button{border:1px solid var(--bord);background:var(--surface);color:var(--ink2);padding:5px 12px;border-radius:7px;cursor:pointer;font:inherit}
+nav button.actif{color:var(--ink);font-weight:600;border-color:var(--axe)}
+select{border:1px solid var(--bord);background:var(--surface);color:var(--ink);padding:4px 8px;border-radius:7px;font:inherit;font-size:12px}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;margin-bottom:14px}
+.tuile{background:var(--surface);border:1px solid var(--bord);border-radius:9px;padding:9px 11px}
+.tuile .l{font-size:11px;color:var(--muted)}
+.tuile .v{font-size:19px;font-weight:650;font-variant-numeric:tabular-nums}
+.tuile .s{font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.carte{background:var(--surface);border:1px solid var(--bord);border-radius:9px;padding:11px;margin-bottom:12px;position:relative}
+.legende{display:flex;gap:14px;font-size:11px;color:var(--ink2);margin-bottom:4px}
+.legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+svg{display:block;width:100%}
+.chip{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.ok{background:color-mix(in srgb,var(--bon) 14%,transparent);color:var(--bon)}
+.ko{background:color-mix(in srgb,var(--critique) 14%,transparent);color:var(--critique)}
+.neutre{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--ink2)}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th{color:var(--muted);text-align:left;font-weight:500;padding:3px 8px;border-bottom:1px solid var(--grid)}
+td{padding:3px 8px;border-bottom:1px solid var(--grid)}
+textarea{width:100%;height:430px;font:12px/1.5 ui-monospace,monospace;background:var(--surface);color:var(--ink);border:1px solid var(--bord);border-radius:8px;padding:10px}
+.btn{border:1px solid var(--axe);background:var(--surface);color:var(--ink);padding:7px 16px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+#msgcfg{margin-left:10px;font-size:12px}
+.tt{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--bord);border-radius:7px;padding:5px 8px;font-size:11px;font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;z-index:5;white-space:nowrap}
+.heat{display:grid;gap:2px;font-size:10px}
+.heat div{border-radius:4px;padding:5px 4px;text-align:center;font-variant-numeric:tabular-nums}
+.note{font-size:11px;color:var(--muted);margin-top:6px}
+.trades{display:flex;flex-direction:column;gap:8px}
+.trade{display:flex;align-items:center;gap:12px;border:1px solid var(--bord);border-radius:10px;padding:9px 12px;background:color-mix(in srgb,var(--surface) 60%,transparent)}
+.trade .fleche{font-size:22px;line-height:1;width:30px;text-align:center}
+.trade .corps{flex:1}
+.trade .titre{font-weight:650;font-size:13px}
+.trade .carac{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.carac span{border:1px solid var(--bord);border-radius:99px;padding:1px 8px;font-size:10.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.badge-mode{border-radius:99px;padding:2px 9px;font-size:10.5px;font-weight:700;letter-spacing:.03em}
+.regl{display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.regl .pnl{font-weight:700;min-width:76px;text-align:right}
+.zone-grille div.cell{cursor:pointer;border:2px solid transparent;transition:border-color .1s}
+.zone-grille div.cell.choisie{background:#eda100 !important;border-color:#ffffff !important;color:#0b0b0b;font-weight:700}
+#voile{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
+#voile .boite{background:var(--surface);border:1px solid var(--bord);border-radius:12px;max-width:520px;padding:20px}
+#voile h3{font-size:15px;margin-bottom:10px}
+#voile p{font-size:13px;color:var(--ink2);margin-bottom:8px}
+</style>
+</head>
+<body>
+<h1>pm-dash <small>btc-updown-5m — lecture des artefacts du bot, rafraîchi en continu</small>
+  <span id="etatbot" class="chip neutre" style="cursor:pointer" title="cliquer : détail des flux">…</span>
+  <span id="mode" class="chip neutre">mode…</span>
+  <select id="selpreset" title="curseur de confiance (écrit config.toml, appliqué au prochain démarrage)">
+    <option value="">— preset —</option>
+    <option value="prudent">prudent (70$/120s/0,96)</option>
+    <option value="standard">standard (70$/120s/0,98)</option>
+    <option value="agressif">agressif (40$/120s/0,98)</option>
+  </select>
+  <span id="msgmode" style="font-size:11px"></span>
+</h1>
+<div id="fluxdetail" class="carte" style="display:none;max-width:640px">
+  <h2>Flux — temps depuis la dernière trame (chrono remis à 0 quand le flux parle)</h2>
+  <table><tbody id="fluxtbl"></tbody></table>
+  <p class="note">Seuils de bonne santé : oracle < 4 s (1 tick/s nominal), carnet CLOB < 8 s, Binance < 5 s, relais spot < 15 s (flux d'affichage, aucune décision).</p>
+</div>
+<nav>
+  <button class="actif" data-o="vue">Vue d'ensemble</button>
+  <button data-o="calib">Calibration</button>
+  <button data-o="cfg">Configuration</button>
+</nav>
+
+<section id="o-vue">
+  <div class="grille" id="tuiles"></div>
+  <div class="carte">
+    <h2>Prix de résolution (bougies 10 s) · strike · frontières de fenêtres</h2>
+    <div class="legende"><span><i style="background:var(--up)"></i>hausse</span><span><i style="background:var(--down)"></i>baisse</span><span><i style="background:var(--serie3)"></i>strike</span></div>
+    <svg id="gBougies" height="230"></svg><div class="tt" id="ttB"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="carte">
+      <h2>Carnet — meilleurs prix (façon Polymarket)</h2>
+      <div class="legende"><span><i style="background:var(--up)"></i>UP (bid–ask)</span><span><i style="background:var(--down)"></i>DOWN (bid–ask)</span></div>
+      <svg id="gMarche" height="170"></svg><div class="tt" id="ttM"></div>
+    </div>
+    <div class="carte">
+      <h2>Volatilité σ EWMA (bp par √s)</h2>
+      <svg id="gVol" height="170"></svg><div class="tt" id="ttV"></div>
+    </div>
+  </div>
+  <div class="carte">
+    <h2>Entrées taker</h2>
+    <div class="trades" id="lstEntrees"></div>
+    <h2 style="margin-top:12px">Derniers règlements</h2>
+    <div id="lstRegl"></div>
+  </div>
+</section>
+
+<section id="o-calib" style="display:none">
+  <div class="carte">
+    <h2>Table de calibration auto-apprise — P(le favori gagne) par bac écart $ × τ</h2>
+    <div id="heat" class="heat"></div>
+    <p class="note">Chaque cellule : probabilité postérieure (wins+k·prior)/(n+k) · effectif n. Les bacs se remplissent à chaque fenêtre réglée. La zone verte exploitable correspond à la frontière (docs/LIGNE_EFFICIENCE.md).</p>
+  </div>
+</section>
+
+<section id="o-cfg" style="display:none">
+  <div class="carte">
+    <h2>Mode avancé — zone de frontière personnalisée</h2>
+    <p class="note" style="margin:0 0 8px">Reprend le fonctionnement « trader humain » mais VOUS choisissez les cellules (écart $ × temps restant) où le bot a le droit d'entrer, directement sur la table de calibration auto-apprise (elle évolue en direct). Cliquez les cellules → jaune à bordures blanches = sélectionnée.</p>
+    <button class="btn" id="btnAvance">Activer le mode avancé…</button>
+    <div id="zoneAvance" style="display:none;margin-top:10px">
+      <div id="grilleZones" class="heat zone-grille"></div>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <label style="font-size:12px">Prix max <input id="avPrix" type="number" step="0.01" min="0.5" max="0.99" value="0.98" style="width:70px;font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--bord);border-radius:6px;padding:3px 6px"></label>
+        <label style="font-size:12px">Marge EV <input id="avMarge" type="number" step="0.005" min="0" max="0.5" value="0.01" style="width:70px;font:inherit;background:var(--surface);color:var(--ink);border:1px solid var(--bord);border-radius:6px;padding:3px 6px"></label>
+        <button class="btn" id="avAppliquer">Appliquer la zone</button>
+        <span id="avMsg" style="font-size:12px"></span>
+      </div>
+    </div>
+  </div>
+  <div class="carte">
+    <h2>Configuration EFFECTIVE — tout est modifiable (validée par le parseur du bot)</h2>
+    <textarea id="cfgtxt" spellcheck="false"></textarea>
+    <div style="margin-top:8px"><button class="btn" id="sauver">Valider & écrire config.toml</button><span id="msgcfg"></span></div>
+    <p class="note">Écrit config.toml (l'ancienne version part en .bak). Application : au prochain (re)démarrage du bot — jamais à chaud pendant un test. Chaque clé est documentée dans config.exemple.toml et docs/CONFIGURATION.md.</p>
+  </div>
+</section>
+
+<div id="voile"><div class="boite">
+  <h3>⚠️ Activer le mode avancé ?</h3>
+  <p>Vous allez définir vous-même la zone d'entrée du bot, cellule par cellule, à la place de la frontière prouvée statistiquement (écart ≥ 70 $, τ ≤ 120 s).</p>
+  <p>Les cellules affichent la probabilité MESURÉE et leur effectif : les zones à faible effectif ou sous ~90 % n'ont pas de preuve — le filtre d'EV calibrée reste actif, mais la responsabilité de la zone est la vôtre.</p>
+  <p>Application : au prochain (re)démarrage du bot. Revenir à un preset annule la zone.</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+    <button class="btn" id="voileNon">Annuler</button>
+    <button class="btn" id="voileOui" style="border-color:#eda100">Je comprends, continuer</button>
+  </div>
+</div></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const fmt=(x,d=2)=>Number.isFinite(x)?x.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("actif"));
+  b.classList.add("actif");
+  for(const o of["vue","calib","cfg"]) $("#o-"+o).style.display=(b.dataset.o===o)?"":"none";
+  if(b.dataset.o==="calib") majCalib();
+  if(b.dataset.o==="cfg") majCfg();
+});
+
+function tuile(l,v,s){return `<div class="tuile"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s??""}</div></div>`}
+
+// Chronos par flux : base = instant client où l'âge serveur a été relevé ;
+// le chrono affiché = âge_serveur + (maintenant − base), remis à 0 quand
+// une trame plus récente arrive (l'âge serveur retombe).
+const FLUX=[["oracle_ms","Oracle Chainlink (résolution)",4000],["clob_ms","Carnet CLOB",8000],
+            ["binance_ms","Binance direct (btcusdt@trade)",5000],["relais_ms","Relais spot RTDS (affichage)",15000]];
+let fluxBase={},fluxT0=0;
+$("#etatbot").onclick=()=>{const d=$("#fluxdetail");d.style.display=d.style.display==="none"?"":"none"};
+function ticFlux(){
+  if(!fluxT0)return;
+  const ecoule=Date.now()-fluxT0;
+  $("#fluxtbl").innerHTML=FLUX.map(([k,nom,seuil])=>{
+    const base=fluxBase[k];
+    if(base===null||base===undefined)
+      return `<tr><td><span class="chip neutre" style="min-width:8px">●</span></td><td>${nom}</td>
+        <td style="text-align:right;color:var(--muted)">—</td><td style="color:var(--muted)">aucune trame</td></tr>`;
+    const ms=base+ecoule;
+    const ok=ms<seuil;
+    return `<tr><td><span class="chip ${ok?"ok":"ko"}" style="min-width:8px">●</span></td><td>${nom}</td>
+      <td style="text-align:right;font-weight:600">${ms<10000?fmt(ms,0)+" ms":fmt(ms/1000,1)+" s"}</td>
+      <td style="color:var(--muted)">seuil ${seuil/1000} s</td></tr>`;
+  }).join("");
+}
+setInterval(ticFlux,100);
+$("#selpreset").onchange=async e=>{
+  if(!e.target.value)return;
+  const r=await fetch("/api/mode",{method:"POST",body:e.target.value});
+  const j=await r.json();
+  const m=$("#msgmode");
+  m.style.color=j.ok?"var(--bon)":"var(--critique)";
+  m.textContent=j.ok?"✓ "+j.note:"✘ "+j.erreur;
+  e.target.value="";
+};
+
+async function majEtat(){
+  try{
+    const e=await (await fetch("/api/etat")).json();
+    fluxBase=e.flux||{}; fluxT0=Date.now();
+    const frais=e.spot_age_s<4;
+    $("#etatbot").className="chip "+(frais?"ok":"ko");
+    $("#etatbot").textContent=(frais?"flux vivant":"flux muet ("+fmt(e.spot_age_s,0)+" s)")+" ▾";
+    const b=e.bot||{};
+    $("#mode").className="chip "+(b.reel?"ko":(b.actif?"ok":"neutre"));
+    $("#mode").textContent=(b.reel?"RÉEL ARMÉ":"PAPER")+(b.actif?"":" · bot arrêté")+" · "+(b.preset||"?")+(b.mode_valeur?" +valeur":"");
+    const f=e.frontiere||{};
+    $("#tuiles").innerHTML=
+      tuile("Fenêtre",(e.fenetre?.slug||"—").replace("btc-updown-5m-",""),`τ restant ${fmt(e.tau_s,0)} s`)+
+      tuile("Spot (oracle)",fmt(e.spot),`strike ${fmt(e.strike)} · conf ${fmt(e.strike_confidence,2)}`)+
+      tuile("Écart $",fmt(e.dist_usd,1),`frontière ≥ ${f.dist_usd} $`)+
+      tuile("P(favori) calibrée",fmt(Math.max(e.p_calibree_up,1-e.p_calibree_up),3),`brute ${fmt(Math.max(e.p_brute_up,1-e.p_brute_up),3)} · bac n=${fmt(e.effectif_bac,0)}`)+
+      tuile("EV nette favori",fmt(e.ev_favori,3),`marge exigée ${f.marge_ev}`)+
+      tuile("Frontière",e.dans_frontiere?"DANS LA BOÎTE":"hors zone",`≥${f.dist_usd}$ · ≤${f.tau_s}s · prix ≤${f.prix_max}`)+
+      tuile("σ EWMA",fmt(e.sigma_par_sqrt_s*1e4,2)+" bp/√s",`z = ${fmt(e.z,2)}`)+
+      tuile("Carnet UP",fmt(e.carnets.bid_up)+" / "+fmt(e.carnets.ask_up),"bid / ask")+
+      tuile("Carnet DOWN",fmt(e.carnets.bid_down)+" / "+fmt(e.carnets.ask_down),"bid / ask")+
+      tuile("PnL tranche",fmt(e.pnl_tranche)+" $",`résolutions ${e.resolutions.confirmees} ✓ / ${e.resolutions.contredites} ✗`)+
+      tuile("Calibration",fmt(e.calibration.fenetres,0)+" fen.",fmt(e.calibration.observations,0)+" observations")+
+      tuile("Spot Binance direct",e.spot_binance?fmt(e.spot_binance[1]):"—","capture lead-lag");
+    const modeCol={frontiere:"var(--serie3)",certitude:"var(--serie3)",valeur:"var(--down)",avance:"#eda100"};
+    $("#lstEntrees").innerHTML=(e.entrees||[]).slice(-5).reverse().map(t=>{
+      const up=t.cote==="UP";
+      return `<div class="trade" style="border-left:4px solid ${up?"var(--up)":"var(--down)"}">
+        <div class="fleche" style="color:${up?"var(--up)":"var(--down)"}">${up?"▲":"▼"}</div>
+        <div class="corps">
+          <div class="titre">${t.cote} @ ${t.avg} <span class="badge-mode" style="background:color-mix(in srgb,${modeCol[t.mode]||"var(--muted)"} 18%,transparent);color:${modeCol[t.mode]||"var(--muted)"}">◈ ${t.mode||"?"}</span>
+            ${t.statut==="exécutée"?`<span class="badge-mode" style="background:color-mix(in srgb,var(--bon) 18%,transparent);color:var(--bon)">✓ exécutée ${t.parts||""} parts @ ${t.prix_reel||""}</span>`
+             :t.statut==="non exécutée"?`<span class="badge-mode" style="background:color-mix(in srgb,var(--critique) 18%,transparent);color:var(--critique)">✗ non exécutée</span>`:""}</div>
+          <div class="carac">
+            <span>🕐 ${t.heure} UTC</span><span>📏 écart ${t.dist} $</span><span>⏳ τ ${t.tau} s</span>
+            <span>🏷️ ask ${t.ask}</span><span>🎯 p ${t.p}</span><span>📐 z ${t.z}</span>
+          </div>
+        </div></div>`;
+    }).join("")||`<p class="note">aucune entrée sur ce run — le bot attend la frontière</p>`;
+    $("#lstRegl").innerHTML=(e.reglements||[]).slice(-8).reverse().map(r=>{
+      const g=r.position?(r.pnl>=0?"var(--bon)":"var(--critique)"):"var(--muted)";
+      return `<div class="regl">
+        <span style="color:${g}">${r.position?(r.pnl>=0?"✅":"❌"):"▫️"}</span>
+        <span>${r.heure}</span>
+        <span style="flex:1">${(r.slug||"").replace("btc-updown-5m-","fenêtre ")} → <b>${r.issue}</b> (strike ${fmt(+r.strike,0)})</span>
+        <span class="pnl" style="color:${g}">${r.position?fmt(r.pnl)+" $":"—"}</span>
+      </div>`;
+    }).join("")||`<p class="note">aucun règlement encore</p>`;
+  }catch(err){ $("#etatbot").className="chip ko"; $("#etatbot").textContent="API injoignable"; }
+}
+
+// ── mini-moteur SVG ──────────────────────────────────────────────────────
+function cadre(svg,xs,ys,pad={g:46,d:8,h:6,b:16}){
+  const W=svg.clientWidth,H=+svg.getAttribute("height");
+  const x=v=>pad.g+(v-xs[0])/(xs[1]-xs[0]||1)*(W-pad.g-pad.d);
+  const y=v=>H-pad.b-(v-ys[0])/(ys[1]-ys[0]||1)*(H-pad.b-pad.h);
+  let g="";
+  const n=4;
+  for(let i=0;i<=n;i++){
+    const vy=ys[0]+(ys[1]-ys[0])*i/n, py=y(vy);
+    g+=`<line x1="${pad.g}" x2="${W-pad.d}" y1="${py}" y2="${py}" stroke="var(--grid)" stroke-width="1"/>`;
+    g+=`<text x="${pad.g-5}" y="${py+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" font-variant-numeric="tabular-nums">${fmt(vy,Math.abs(ys[1]-ys[0])<0.2?3:(Math.abs(ys[1])<10?2:0))}</text>`;
+  }
+  return {W,H,x,y,g};
+}
+const heure=ms=>new Date(ms).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+
+function dessineBougies(d){
+  const svg=$("#gBougies"); if(!d.bougies.length){svg.innerHTML="";return}
+  const b=d.bougies.slice(-180);
+  const xs=[b[0][0],b[b.length-1][0]+10], lo=Math.min(...b.map(c=>c[3])), hi=Math.max(...b.map(c=>c[2]));
+  const marge=(hi-lo)*0.08||1;
+  const c=cadre(svg,xs,[lo-marge,hi+marge]);
+  let s=c.g;
+  for(const w of d.fenetres){
+    const t=w.t0_ms/1000;
+    if(t>=xs[0]&&t<=xs[1]) s+=`<line x1="${c.x(t)}" x2="${c.x(t)}" y1="6" y2="${c.H-16}" stroke="var(--axe)" stroke-dasharray="3 4"/>`;
+  }
+  const larg=Math.max(2,(c.W-54)/b.length-2);
+  for(const[t,o,h,l,cl] of b){
+    const up=cl>=o, col=up?"var(--up)":"var(--down)";
+    s+=`<line x1="${c.x(t+5)}" x2="${c.x(t+5)}" y1="${c.y(h)}" y2="${c.y(l)}" stroke="${col}" stroke-width="1.4"/>`;
+    s+=`<rect x="${c.x(t+5)-larg/2}" y="${Math.min(c.y(o),c.y(cl))}" width="${larg}" height="${Math.max(1.5,Math.abs(c.y(o)-c.y(cl)))}" rx="1.5" fill="${col}"/>`;
+  }
+  s+=`<text x="${c.x(xs[0])}" y="${c.H-3}" font-size="10" fill="var(--muted)">${heure(xs[0]*1000)}</text><text x="${c.x(xs[1])}" y="${c.H-3}" text-anchor="end" font-size="10" fill="var(--muted)">${heure(xs[1]*1000)}</text>`;
+  if(d.strike_courant) s+=`<line x1="46" x2="${c.W-8}" y1="${c.y(d.strike_courant)}" y2="${c.y(d.strike_courant)}" stroke="var(--serie3)" stroke-width="2" stroke-dasharray="6 4"/><text x="${c.W-10}" y="${c.y(d.strike_courant)-4}" text-anchor="end" font-size="10" fill="var(--serie3)">strike ${fmt(d.strike_courant,0)}</text>`;
+  svg.innerHTML=s;
+  survol(svg,$("#ttB"),px=>{
+    const t=xs[0]+(px-46)/(c.W-54)*(xs[1]-xs[0]);
+    const cd=b.reduce((m,c2)=>Math.abs(c2[0]-t)<Math.abs(m[0]-t)?c2:m,b[0]);
+    return {x:c.x(cd[0]+5),html:`${heure(cd[0]*1000)}<br>O ${fmt(cd[1])} · H ${fmt(cd[2])}<br>B ${fmt(cd[3])} · C ${fmt(cd[4])}`};
+  });
+}
+
+function ligne(svg,tt,serie2,unit,couleurs,noms){
+  return d=>{
+    const svgel=$(svg); const series=serie2(d);
+    const pts=series.flatMap(s2=>s2.pts);
+    if(!pts.length){svgel.innerHTML="";return}
+    const xs=[Math.min(...pts.map(p=>p[0])),Math.max(...pts.map(p=>p[0]))];
+    const lo=Math.min(...pts.map(p=>p[1])),hi=Math.max(...pts.map(p=>p[1]));
+    const m=(hi-lo)*0.1||0.01;
+    const c=cadre(svgel,xs,[lo-m,hi+m]);
+    let s=c.g;
+    series.forEach((s2,i)=>{
+      if(!s2.pts.length)return;
+      const path=s2.pts.map((p,j)=>(j?"L":"M")+c.x(p[0]).toFixed(1)+" "+c.y(p[1]).toFixed(1)).join("");
+      s+=`<path d="${path}" fill="none" stroke="${couleurs[i]}" stroke-width="2" stroke-linejoin="round"/>`;
+      const der=s2.pts[s2.pts.length-1];
+      s+=`<text x="${c.x(der[0])-4}" y="${c.y(der[1])-6}" text-anchor="end" font-size="10" fill="var(--ink2)">${noms[i]} ${fmt(der[1],3)}</text>`;
+    });
+    s+=`<text x="${c.x(xs[0])}" y="${c.H-3}" font-size="10" fill="var(--muted)">${heure(xs[0])}</text><text x="${c.x(xs[1])}" y="${c.H-3}" text-anchor="end" font-size="10" fill="var(--muted)">${heure(xs[1])}</text>`;
+    svgel.innerHTML=s;
+    survol(svgel,$(tt),px=>{
+      const t=xs[0]+(px-46)/(c.W-54)*(xs[1]-xs[0]);
+      const rows=series.map((s2,i)=>{
+        if(!s2.pts.length)return"";
+        const p=s2.pts.reduce((m2,q)=>Math.abs(q[0]-t)<Math.abs(m2[0]-t)?q:m2,s2.pts[0]);
+        return `${noms[i]} : ${fmt(p[1],3)}${unit}`;
+      }).filter(Boolean);
+      return {x:px,html:heure(t)+"<br>"+rows.join("<br>")};
+    });
+  };
+}
+function survol(svg,tt,calc){
+  svg.onmousemove=ev=>{
+    const r=svg.getBoundingClientRect();
+    const {x,html}=calc(ev.clientX-r.left);
+    tt.style.display="block"; tt.innerHTML=html;
+    tt.style.left=Math.min(x+12,r.width-140)+"px"; tt.style.top="30px";
+  };
+  svg.onmouseleave=()=>tt.style.display="none";
+}
+const dessineMarche=ligne("#gMarche","#ttM",d=>[
+  {pts:d.up.map(p=>[p[0],(p[1]+p[2])/2])},{pts:d.down.map(p=>[p[0],(p[1]+p[2])/2])}
+],"",["var(--up)","var(--down)"],["UP","DOWN"]);
+const dessineVol=ligne("#gVol","#ttV",d=>[
+  {pts:d.vol.map(p=>[p[0]*1000,p[1]*1e4])}
+]," bp",["var(--serie3)"],["σ"]);
+
+async function majSeries(){
+  try{
+    const [d,e]=await Promise.all([(await fetch("/api/series")).json(),(await fetch("/api/etat")).json()]);
+    d.strike_courant=e.strike;
+    dessineBougies(d); dessineMarche(d); dessineVol(d);
+  }catch(err){}
+}
+
+async function majCalib(){
+  const t=await (await fetch("/api/calibration")).json();
+  const db=t.dist_bins,tb=t.tau_bins;
+  const lab=(b,i,u)=>i+1<b.length?`${b[i]}–${b[i+1]}${u}`:`≥${b[i]}${u}`;
+  let h=`<div></div>`+tb.map((_,j)=>`<div style="color:var(--muted)">${lab(tb,j,"s")}</div>`).join("");
+  for(let i=db.length-1;i>=0;i--){
+    h+=`<div style="color:var(--muted);text-align:right;padding-right:6px">${lab(db,i,"$")}</div>`;
+    for(let j=0;j<tb.length;j++){
+      const c=t.cells[i][j],n=c.wins+c.losses;
+      const p=n?c.wins/n:null;
+      const alpha=n?Math.min(.85,.15+n/40):.05;
+      const col=p===null?"var(--muted)":(p>=.9?"var(--bon)":(p>=.75?"var(--up)":"var(--critique)"));
+      h+=`<div style="background:color-mix(in srgb,${col} ${alpha*100}%,transparent)"><b>${p===null?"—":fmt(p*100,0)+"%"}</b><br>n=${fmt(n,0)}</div>`;
+    }
+  }
+  const el=$("#heat");
+  el.style.gridTemplateColumns=`90px repeat(${tb.length},1fr)`;
+  el.innerHTML=h;
+}
+
+async function majCfg(){
+  const c=await (await fetch("/api/config")).json();
+  $("#cfgtxt").value=c.toml;
+}
+$("#sauver").onclick=async()=>{
+  const r=await fetch("/api/config",{method:"POST",body:$("#cfgtxt").value});
+  const j=await r.json();
+  const m=$("#msgcfg");
+  m.style.color=j.ok?"var(--bon)":"var(--critique)";
+  m.textContent=j.ok?("✓ "+j.note):("✘ "+j.erreur);
+};
+
+// ── Mode avancé : confirmation → grille de sélection vivante ──
+let zonesSel=new Set(), grilleTimer=null;
+$("#btnAvance").onclick=()=>{$("#voile").style.display="flex"};
+$("#voileNon").onclick=()=>{$("#voile").style.display="none"};
+$("#voileOui").onclick=()=>{
+  $("#voile").style.display="none";
+  $("#zoneAvance").style.display="";
+  majGrilleZones(); clearInterval(grilleTimer); grilleTimer=setInterval(majGrilleZones,5000);
+};
+async function majGrilleZones(){
+  const t=await (await fetch("/api/calibration")).json();
+  const e=await (await fetch("/api/etat")).json();
+  // pré-cocher la zone active si le bot est déjà en avancé
+  if(zonesSel.size===0&&e.bot&&e.bot.zones_frontiere&&e.bot.zones_frontiere!=="0"){
+    const m=BigInt(e.bot.zones_frontiere);
+    for(let b=0;b<49;b++) if(m>>BigInt(b)&1n) zonesSel.add(b);
+    $("#avPrix").value=e.bot.prix_max_frontiere; $("#avMarge").value=e.bot.marge_ev;
+  }
+  const db=t.dist_bins,tb=t.tau_bins;
+  const lab=(b,i,u)=>i+1<b.length?`${b[i]}–${b[i+1]}${u}`:`≥${b[i]}${u}`;
+  let h=`<div></div>`+tb.map((_,j)=>`<div style="color:var(--muted)">${lab(tb,j,"s")}</div>`).join("");
+  for(let i=db.length-1;i>=0;i--){
+    h+=`<div style="color:var(--muted);text-align:right;padding-right:6px">${lab(db,i,"$")}</div>`;
+    for(let j=0;j<tb.length;j++){
+      const c=t.cells[i][j],n=c.wins+c.losses,p=n?c.wins/n:null;
+      const bit=i*7+j;
+      const alpha=n?Math.min(.85,.15+n/40):.05;
+      const col=p===null?"var(--muted)":(p>=.9?"var(--bon)":(p>=.75?"var(--up)":"var(--critique)"));
+      h+=`<div class="cell ${zonesSel.has(bit)?"choisie":""}" data-bit="${bit}" style="background:color-mix(in srgb,${col} ${alpha*100}%,transparent)"><b>${p===null?"—":fmt(p*100,0)+"%"}</b><br>n=${fmt(n,0)}</div>`;
+    }
+  }
+  const el=$("#grilleZones");
+  el.style.gridTemplateColumns=`90px repeat(${tb.length},1fr)`;
+  el.innerHTML=h;
+  el.querySelectorAll(".cell").forEach(c=>c.onclick=()=>{
+    const b=+c.dataset.bit;
+    zonesSel.has(b)?zonesSel.delete(b):zonesSel.add(b);
+    c.classList.toggle("choisie");
+  });
+}
+$("#avAppliquer").onclick=async()=>{
+  let mask=0n; for(const b of zonesSel) mask|=1n<<BigInt(b);
+  const r=await fetch("/api/avance",{method:"POST",body:JSON.stringify({
+    zones:mask.toString(), prix_max:+$("#avPrix").value, marge_ev:+$("#avMarge").value})});
+  const j=await r.json(); const m=$("#avMsg");
+  m.style.color=j.ok?"var(--bon)":"var(--critique)";
+  m.textContent=j.ok?"✓ "+j.note:"✘ "+j.erreur;
+};
+
+majEtat(); majSeries();
+setInterval(majEtat,2000);
+setInterval(majSeries,10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+polyrungis
+Copyright 2026 Clément Bondaz
+
+Bot de trading pour le marché Polymarket « BTC Up/Down 5 minutes ».
+
+Ce produit est distribué sous la licence Apache, version 2.0 (voir le
+fichier LICENSE). En cas de redistribution, ce fichier NOTICE doit être
+conservé et les modifications signalées, conformément à la licence.
+
+Ce logiciel se connecte à des services tiers (Polymarket, Chainlink,
+Binance) via leurs API publiques ; il n'est ni affilié à, ni approuvé par
+ces services. Logiciel de recherche fourni SANS AUCUNE GARANTIE — voir la
+clause de non-garantie de la licence.
