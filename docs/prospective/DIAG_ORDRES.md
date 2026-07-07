@@ -105,3 +105,51 @@ données. Les leviers réels :
 
 Ce sera étudié quantitativement **après le modèle ETH** (ordre du plan
 initial), en addendum à l'analyse de la collecte ETH.
+
+---
+
+## Addendum — asymétrie de latence quantifiée (données ETH, 07/07)
+
+Script : `analysis/eth/addendum_latence.py`. Mesures sur 7,7 M de
+messages CLOB, 62 fenêtres ETH.
+
+**La cadence des messages est rapide (8 ms médiane), mais trompeuse** :
+1 vrai changement de prix pour **103 messages** (le reste = tailles). La
+métrique qui compte est l'intervalle entre CHANGEMENTS de best_ask :
+
+| Intervalle entre changements de prix | médiane | p75 | p90 |
+|---|---|---|---|
+| best_ask | **230 ms** | 690 ms | **1 590 ms** |
+| mid (bid+ask)/2 | 76 ms | 307 ms | 980 ms |
+
+→ **Confirme l'observation : la queue de la cadence est bien 600-1500 ms.**
+Entre deux changements, le carnet du bot est figé alors que l'oracle
+avance (1 tick/s). Sur la queue (p90 ~1,5 s), l'ask que voit le bot peut
+être très en retard sur le fair réel.
+
+**Amplitude de l'erreur** : |Δ best_ask| entre deux changements — médiane
+0,010, p90 0,020, **17 % des changements ≥ 2 cents**. Donc quand le prix
+bouge, il bouge d'1-2 cents d'un coup ; si le bot agit dans l'intervalle
+figé, il porte cette erreur.
+
+**Latence de réception** (recv − serveur) : CLOB médiane 67 ms (p90
+202 ms) ; oracle 307 ms (réseau+relais). Sur un VPS proche des serveurs
+Polymarket, la réception baisse ; la CADENCE de changement, elle, est une
+propriété du marché — non compressible côté client.
+
+### Ce que ça implique pour 1.0 Aligre
+
+1. **Modéliser l'âge du carnet** : dater le dernier changement de best_ask ;
+   quand il vieillit (approche de la queue 1,5 s), le prix vu est suspect →
+   élargir la marge ou s'abstenir.
+2. **Extrapoler par l'oracle** : l'oracle est fiable (1/s). Entre deux
+   changements de carnet, estimer le fair via l'oracle plutôt que de croire
+   un ask figé.
+3. **Rappel de flux plus rapide** (cible < 1000-1500 ms) : ne réduit pas la
+   cadence intrinsèque, mais coupe la queue (les silences prolongés).
+4. **Ne pas décider sur un carnet plus vieux qu'un seuil** (garde-fou de
+   fraîcheur), comme le garde-fou de confiance du strike.
+
+C'est structurel, pas un bug : le bot ne peut pas être plus frais que le
+canal. Le gain vient de DÉCIDER en connaissance de cet âge, pas de courir
+après une fraîcheur impossible.
