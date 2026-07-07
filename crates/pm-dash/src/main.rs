@@ -12,8 +12,10 @@
 
 use anyhow::{Context, Result};
 use axum::extract::State;
+use axum::extract::Request;
+use axum::middleware::{self, Next};
 use axum::http::StatusCode;
-use axum::response::Html;
+use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use pm_core::math::student_t_cdf;
@@ -37,23 +39,41 @@ struct App {
 
 fn main() -> Result<()> {
     tracing_subscriber::fmt().with_env_filter("info").init();
-    let base = std::env::args()
-        .nth(1)
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."));
+    let mut base = PathBuf::from(".");
+    let mut bind = "127.0.0.1:7777".to_string();
+    let argv: Vec<String> = std::env::args().skip(1).collect();
+    let mut i = 0;
+    while i < argv.len() {
+        match argv[i].as_str() {
+            "--bind" => { i += 1; bind = argv.get(i).cloned().unwrap_or(bind); }
+            other if !other.starts_with("--") => base = PathBuf::from(other),
+            other => anyhow::bail!("argument inconnu: {other}"),
+        }
+        i += 1;
+    }
     anyhow::ensure!(
         base.join("data_v2").exists() || base.join("config.exemple.toml").exists(),
         "lancez pm-dash depuis la racine du projet (ou passez-la en argument)"
     );
+    // Authentification optionnelle : PM_DASH_AUTH="utilisateur:motdepasse".
+    // OBLIGATOIRE dès qu'on n'écoute pas uniquement sur localhost.
+    let auth = std::env::var("PM_DASH_AUTH").ok().filter(|s| s.contains(':'));
+    let local = bind.starts_with("127.") || bind.starts_with("localhost");
+    if !local && auth.is_none() {
+        anyhow::bail!(
+            "écoute publique sur {bind} SANS authentification refusée. \n\
+             Définissez PM_DASH_AUTH=\"utilisateur:motdepasse\" avant de lancer."
+        );
+    }
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
         .build()?;
-    rt.block_on(serve(App { base: Arc::new(base) }))
+    rt.block_on(serve(App { base: Arc::new(base) }, bind, auth))
 }
 
-async fn serve(app: App) -> Result<()> {
-    let router = Router::new()
+async fn serve(app: App, bind: String, auth: Option<String>) -> Result<()> {
+    let mut router = Router::new()
         .route("/", get(|| async { Html(PAGE) }))
         .route("/api/etat", get(api_etat))
         .route("/api/series", get(api_series))
@@ -62,11 +82,55 @@ async fn serve(app: App) -> Result<()> {
         .route("/api/mode", post(api_mode))
         .route("/api/avance", post(api_avance))
         .with_state(app);
-    let addr = "127.0.0.1:7777";
-    tracing::info!("pm-dash → http://{addr}");
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    if let Some(creds) = auth {
+        // En-tête attendu : "Basic base64(utilisateur:motdepasse)".
+        let attendu = format!("Basic {}", base64(creds.as_bytes()));
+        router = router.layer(middleware::from_fn_with_state(attendu, verifier_auth));
+        tracing::info!("authentification Basic activée");
+    }
+    tracing::info!("pm-dash → http://{bind}");
+    let listener = tokio::net::TcpListener::bind(&bind).await?;
     axum::serve(listener, router).await?;
     Ok(())
+}
+
+/// Middleware d'authentification Basic (comparaison en temps constant grossier).
+async fn verifier_auth(
+    State(attendu): State<String>,
+    req: Request,
+    next: Next,
+) -> axum::response::Response {
+    let ok = req
+        .headers()
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v == attendu)
+        .unwrap_or(false);
+    if ok {
+        next.run(req).await
+    } else {
+        (
+            StatusCode::UNAUTHORIZED,
+            [("WWW-Authenticate", "Basic realm=\"pm-dash\"")],
+            "authentification requise",
+        )
+            .into_response()
+    }
+}
+
+/// Encodage base64 standard (sans dépendance).
+fn base64(input: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for chunk in input.chunks(3) {
+        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let n = (b[0] as u32) << 16 | (b[1] as u32) << 8 | b[2] as u32;
+        out.push(T[(n >> 18 & 63) as usize] as char);
+        out.push(T[(n >> 12 & 63) as usize] as char);
+        out.push(if chunk.len() > 1 { T[(n >> 6 & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { T[(n & 63) as usize] as char } else { '=' });
+    }
+    out
 }
 
 // ─── Lecture des artefacts du bot ────────────────────────────────────────

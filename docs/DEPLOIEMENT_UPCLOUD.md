@@ -163,9 +163,19 @@ sortantes vers Polymarket). Configuration recommandée dans le panneau
 - **Entrant** : autoriser SSH (port 22) uniquement depuis votre IP ;
   refuser le reste.
 - **Sortant** : tout autoriser (HTTPS/WSS vers Polymarket et Binance).
-- Le **dashboard web** (`pm-dash`, port 7777) écoute sur `127.0.0.1`
-  uniquement : ne l'exposez pas. Pour le consulter depuis votre machine,
-  passez par un **tunnel SSH** :
+- Le **dashboard web** (`pm-dash`) écoute par défaut sur `127.0.0.1:7777`.
+  Deux façons de le consulter à distance :
+  - **(a) Port déjà ouvert + authentification** (idéal depuis un mobile) :
+    le firewall UpCloud autorise déjà 8080. Lancez pm-dash en écoute
+    publique AVEC un mot de passe, puis ouvrez `http://<IP>:8080` :
+    ```bash
+    PM_DASH_AUTH="admin:VotreMotDePasse" \
+      nohup ~/polyrungis/target/release/pm-dash --bind 0.0.0.0:8080 ~/polyrungis \
+      >/tmp/pm-dash.log 2>&1 & disown
+    ```
+    L'authentification Basic est OBLIGATOIRE en écoute publique (pm-dash
+    refuse de démarrer sans). Choisissez un vrai mot de passe.
+  - **(b) Tunnel SSH** (le plus sûr, depuis un ordinateur) :
   ```bash
   ssh -L 7777:localhost:7777 pm@<IP-DU-SERVEUR>
   # puis, côté serveur : ~/polyrungis/target/release/pm-dash ~/polyrungis
