@@ -80,9 +80,28 @@ la marge est trop conservatrice pour ces états à p très élevé.
    « compté » par Polymarket et peut se remplir sur une oscillation, là où
    le FAK est tué. À comparer au FAK sur données, sans dégrader l'EV.
 
-## Verdict
+## Verdict (recadré — précision utilisateur du 07/07)
 
-Le blocage principal du passage d'ordre est un **problème de fraîcheur/
-intégrité du carnet dû à l'instabilité des connexions CLOB**, pas le délai
-de 250 ms. C'est un correctif d'infrastructure (module d'acquisition), au
-cœur de la refonte 1.0 Aligre — et il bénéficiera aussi bien à BTC qu'à ETH.
+Le sujet de fond n'est ni le délai de 250 ms, ni la vitesse de décision du
+bot, ni même l'instabilité des connexions (aggravateur secondaire) : c'est
+une **ASYMÉTRIE DE LATENCE STRUCTURELLE**. Les WebSocket CLOB/RTDS se
+rafraîchissent en moyenne toutes les **~600-1500 ms** ; entre deux mises à
+jour, le marché réel bouge alors que le carnet du bot ne bouge pas. Le
+carnet et les données sont donc **en permanence un peu faux** — un léger
+retard constant, invisible quand le marché est calme, décisif quand il
+court (fin de fenêtre, gros écart).
+
+Conséquence : le bot décide toujours sur un état légèrement passé. Ce n'est
+pas réparable par un « meilleur ordre » ; c'est une propriété du canal de
+données. Les leviers réels :
+- **mesurer précisément cette asymétrie** (cadence de rafraîchissement par
+  flux, distribution du retard) → fait en addendum sur les données ETH ;
+- **modéliser le retard** : décider en tenant compte du fait que le carnet
+  vu a un âge moyen connu (extrapoler, ou élargir les marges en fonction de
+  l'âge du dernier update) ;
+- **re-souscription/rappel plus rapide** quand un flux ralentit (cible
+  utilisateur < 1000-1500 ms) pour réduire l'amplitude de l'asymétrie ;
+- ne trader que quand la fraîcheur du carnet est suffisante (garde-fou).
+
+Ce sera étudié quantitativement **après le modèle ETH** (ordre du plan
+initial), en addendum à l'analyse de la collecte ETH.
