@@ -24,3 +24,4 @@ config-micro.toml
 .claude/settings.local.json
 config-micro-test.conf
 data_collect/
+analysis/eth/out/
