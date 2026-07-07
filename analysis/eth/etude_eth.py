@@ -57,7 +57,7 @@ for w in win.itertuples():
     t0,te=w.t0_ms,w.end_ms
     i0=np.searchsorted(ts,t0,"right")-1; iF=np.searchsorted(ts,te,"right")-1
     if i0<0 or iF<=i0 or ts[i0]<t0-2000 or ts[iF]<te-2000: continue
-    K=px[i0]; up_won = px[iF]>K
+    K=px[i0]; up_won = px[iF]>=K  # règle officielle : >=
     for tsec in range(t0//1000+10, te//1000-2):
         tm=tsec*1000; i=np.searchsorted(ts,tm,"right")-1
         if ts[i]<tm-3000 or np.isnan(sig[i]) or sig[i]<=0: continue
