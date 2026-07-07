@@ -41,6 +41,8 @@ ${Y}SUPERVISION${N}
                                quitter — n'arrête PAS le bot).
   sante                        Test de connectivité Polymarket (Gamma,
                                CLOB, RTDS) depuis cette machine.
+  latence                      Latence VPS↔Polymarket : RTT réseau (TCP/TLS)
+                               + latence de réception observée CLOB/RTDS (ms).
 
 ${Y}DRY RUN${N}
   collecter [options]          Collecte pure pour la calibration : AUCUN
@@ -154,6 +156,56 @@ cmd_sante() {
   done
   info "Fenêtre active côté Gamma :"
   curl -sS --max-time 8 "https://gamma-api.polymarket.com/events?slug=btc-updown-5m-$(( $(date +%s) / 300 * 300 ))" 2>/dev/null | head -c 200; echo
+}
+
+cmd_latence() {
+  local j="${1:-}"
+  echo "${B}══ LATENCE — performances VPS ↔ Polymarket — $(date '+%H:%M:%S') ══${N}"
+  echo "${B}▸ Établissement de connexion (RTT réseau + TLS)${N}"
+  for h in gamma-api.polymarket.com clob.polymarket.com ws-live-data.polymarket.com; do
+    read -r tcp tls < <(curl -4 -sS -o /dev/null -w "%{time_connect} %{time_appconnect}" --max-time 8 "https://$h/" 2>/dev/null || echo "0 0")
+    local tcp_ms tls_ms
+    tcp_ms=$(awk "BEGIN{printf \"%.0f\", ${tcp:-0}*1000}")
+    tls_ms=$(awk "BEGIN{printf \"%.0f\", (${tls:-0}-${tcp:-0})*1000}")
+    if [ "${tcp_ms}" = "0" ]; then ko "$(printf '%-30s injoignable' "$h")"
+    else printf "   %-30s ${G}%4s ms${N} TCP  ${D}+ %s ms TLS${N}\n" "$h" "$tcp_ms" "$tls_ms"; fi
+  done
+  # Journal courant (ou chemin passé en argument).
+  if [ -z "$j" ]; then local run; run=$(dernier_run); j=$(ls -t "$run"/journal_*.ndjson 2>/dev/null | head -1); fi
+  if [ -z "$j" ] || [ ! -f "$j" ]; then
+    info "Latence de réception : aucun journal actif (lancez collecter/demarrer)."
+    return
+  fi
+  echo "${B}▸ Latence de RÉCEPTION observée${N} ${D}(recv − horodatage source, échantillon récent)${N}"
+  tail -c 12000000 "$j" 2>/dev/null | python3 -c '
+import json,sys,statistics as st
+buckets={"CLOB (carnet)":[], "RTDS oracle — réseau":[], "RTDS oracle — pipeline":[], "Binance direct":[]}
+for line in sys.stdin:
+    try: fr=json.loads(line)
+    except: continue
+    s=fr.get("stream"); recv=fr.get("recv_ms",0); raw=fr.get("raw","")
+    try:
+        if s=="clob" and "price_changes" in raw:
+            m=json.loads(raw); ts=m.get("timestamp")
+            if ts: buckets["CLOB (carnet)"].append(recv-int(ts))
+        elif s=="rtds" and "chainlink" in raw:
+            m=json.loads(raw); ext=m.get("timestamp"); pay=m.get("payload",{}).get("timestamp")
+            if ext: buckets["RTDS oracle — réseau"].append(recv-int(ext))
+            if pay: buckets["RTDS oracle — pipeline"].append(recv-int(pay))
+        elif s=="binance":
+            m=json.loads(raw); e=m.get("E")
+            if e: buckets["Binance direct"].append(recv-int(e))
+    except: pass
+def pct(v,q):
+    v=sorted(v); return v[min(len(v)-1,int(q*len(v)))]
+for k,v in buckets.items():
+    if len(v)<3:
+        print(f"   {k:<26} (données insuffisantes)"); continue
+    v=[x for x in v if -2000<x<60000]  # écarte les aberrations d horloge
+    print(f"   {k:<26} médiane {int(st.median(v)):>5} ms   p90 {pct(v,0.9):>5} ms   p99 {pct(v,0.99):>6} ms   (n={len(v)})")
+print("\n   Repères : CLOB < 150 ms et RTDS réseau < 300 ms = VPS sain.")
+print("   Le pipeline RTDS (~1,4 s) vient de Chainlink, pas du VPS : non compressible.")
+'
 }
 
 cmd_demarrer() {
@@ -280,6 +332,7 @@ case "${1:-aide}" in
   rapport)    shift; cmd_rapport "$@";;
   suivre)     shift; cmd_suivre "$@";;
   sante|santé) shift; cmd_sante "$@";;
+  latence|latency) shift; cmd_latence "$@";;
   demarrer|démarrer) shift; cmd_demarrer "$@";;
   collecter|collecte) shift; cmd_collecter "$@";;
   arreter|arrêter)   shift; cmd_arreter "$@";;
