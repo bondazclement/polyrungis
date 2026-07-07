@@ -22,3 +22,4 @@ config-micro.toml
 *.bak
 *.log
 .claude/settings.local.json
+config-micro-test.conf

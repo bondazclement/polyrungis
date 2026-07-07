@@ -163,6 +163,9 @@ et vos identifiants. Le script guide tout :
 
 ```bash
 cd ~/polyrungis
+# 1. définir une fois les plafonds/params (persistés sur le serveur) :
+./scripts/micro-test.sh config
+# 2. lancer (réutilise ces paramètres) :
 ./scripts/micro-test.sh lancer --duree 8
 ```
 

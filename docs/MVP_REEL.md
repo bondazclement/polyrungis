@@ -35,6 +35,25 @@ stratégie (taker EV) ──► Passerelle (enum)
 - **Frais réels** : le SDK récupère le fee rate du marché et le modèle les
   intègre dans l'EV (0,07 × p(1−p) crypto) — cohérence paper/réel.
 
+## Paramétrer le micro-test (persisté)
+
+Tous les garde-fous et réglages du micro-test sont éditables et **persistés**
+dans `config-micro-test.conf` (jamais versionné ; la clé privée n'y est
+jamais écrite). Deux accès :
+
+```bash
+./scripts/micro-test.sh config      # menu interactif (plafonds, sizing, frontière, durée, compte)
+./scripts/micro-test.sh params      # afficher les paramètres effectifs
+```
+
+Ou via l'installateur : option **P — Paramétrer le micro-test**. Réglages
+exposés : plafond par ordre ($), nombre max d'ordres, perte max avant
+arrêt définitif, bankroll, écart/τ/prix/marge de la frontière (+ presets
+prudent/standard/agressif), mode valeur, durée par défaut, adresse funder
+et type de signature. Une fois définis, **tous les `micro-test.sh lancer`
+réutilisent ces valeurs** — sur le serveur comme en local. La CLI
+`--duree H` surcharge ponctuellement la durée.
+
 ## Runbook : premiers micro-trades (quand VOUS déciderez)
 
 1. Wallet dédié au test, approvisionné de 50 $ max (pUSD Polygon + POL si

@@ -49,7 +49,10 @@ T[de:m5]="Dry-Run — Paper-Trading (keine echten Orders)"
 T[fr:m6]="Tester le chemin d'ordres RÉEL (identifiants)"
 T[en:m6]="Test the REAL order path (credentials)"
 T[de:m6]="ECHTEN Order-Pfad testen (Zugangsdaten)"
-T[fr:m7]="Micro-test RÉEL (≤ 5 \$/ordre)"; T[en:m7]="REAL micro-test (≤ \$5/order)"; T[de:m7]="ECHTER Mikro-Test (≤ 5 \$/Order)"
+T[fr:m7]="Micro-test RÉEL (utilise les paramètres ci-dessous)"; T[en:m7]="REAL micro-test (uses the parameters below)"; T[de:m7]="ECHTER Mikro-Test (nutzt die Parameter unten)"
+T[fr:mP]="Paramétrer le micro-test (plafonds, sizing, frontière, durée)"
+T[en:mP]="Configure the micro-test (limits, sizing, frontier, duration)"
+T[de:mP]="Mikro-Test konfigurieren (Limits, Sizing, Grenze, Dauer)"
 T[fr:m8]="Tableau de bord web (http://localhost:7777)"
 T[en:m8]="Web dashboard (http://localhost:7777)"
 T[de:m8]="Web-Dashboard (http://localhost:7777)"
@@ -182,6 +185,7 @@ act_dry() {
 }
 act_ordres() { banniere; echo "${P_WARN} $(tr a_reel)"; echo; "$BASE/scripts/tester-ordres.sh"; pause; }
 act_micro()  { banniere; echo "${P_WARN} $(tr a_reel)"; echo; "$BASE/scripts/micro-test.sh" lancer; pause; }
+act_params() { "$BASE/scripts/micro-test.sh" config; }
 act_dash() {
   banniere; titre_phase "$(tr m8)"
   [ -x "$BASE/target/release/pm-dash" ] || { echo "${P_WARN} $(tr a_nobin)"; pause; return; }
@@ -223,6 +227,7 @@ menu() {
     echo "   ${CYA}5${N}  📊 $(tr m5)"
     echo "   ${YLW}6${N}  🔌 $(tr m6)"
     echo "   ${YLW}7${N}  💵 $(tr m7)"
+    echo "   ${YLW}P${N}  🎚️  $(tr mP)"
     echo "   ${CYA}8${N}  🖥️  $(tr m8)"
     echo "   ${GRY}9${N}  ⏹️  $(tr m9)"
     echo "   ${GRY}0${N}  🚪 $(tr m0)"
@@ -230,7 +235,7 @@ menu() {
     local c; read -rp "${B}$(tr choix)${N} ▸ " c
     case "$c" in
       1) act_install;; 2) act_verifier;; 3) act_diag;; 4) act_config;;
-      5) act_dry;; 6) act_ordres;; 7) act_micro;; 8) act_dash;; 9) act_stop;;
+      5) act_dry;; 6) act_ordres;; 7) act_micro;; [Pp]) act_params;; 8) act_dash;; 9) act_stop;;
       0) echo "${GRY}$(tr aurevoir)${N}"; exit 0;;
       *) echo "${P_KO} $(tr invalide)"; sleep 1;;
     esac
